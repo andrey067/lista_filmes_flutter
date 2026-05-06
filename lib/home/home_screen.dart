@@ -1,17 +1,14 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
-import '../shared/di/locator.dart';
-import 'models/filme_list_viewmodel.dart';
 import 'widgets/filme_list.dart';
+import 'widgets/search_input.dart';
 import '../filme_detail/filme_detail_screen.dart';
 
 /// Home: busca com debounce e lista de filmes com paginação.
 ///
 /// ## Animação para o detalhe ([FilmeDetailScreen])
 ///
-/// O “voo” da imagem do cartaz usa o widget [Hero] do Flutter (*shared element
+/// O "voo" da imagem do cartaz usa o widget [Hero] do Flutter (*shared element
 /// transition*):
 ///
 /// 1. Em cada cartão, [FilmeCard] envolve o poster num [Hero] com
@@ -22,7 +19,7 @@ import '../filme_detail/filme_detail_screen.dart';
 ///    pela API e coloca outro [Hero] no fundo do [SliverAppBar] com a **mesma
 ///    tag** e a mesma URL.
 /// 3. O motor de rotas do Flutter associa os dois Heroes pela tag e anima a
-///    transição entre retângulos de origem e destino (escala/posição durante o
+///    transição entre retângulos de origem e destino (escala/ posição durante o
 ///    push). `transitionOnUserGestures: true` permite continuar a animação ao
 ///    arrastar para voltar (no iOS sobretudo).
 ///
@@ -36,30 +33,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  Timer? _debounce;
-
-  // Debounce: só envia para o ViewModel após 500ms sem typing.
-  void _scheduleSearch() {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      getIt<FilmeListViewModel>().setSearchQuery(_searchController.text);
-    });
-  }
-
-  void _clearSearch() {
-    _debounce?.cancel();
-    _searchController.clear();
-    getIt<FilmeListViewModel>().setSearchQuery('');
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _searchController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -91,33 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _searchController,
-              builder: (context, value, _) {
-                return TextField(
-                  controller: _searchController,
-                  onChanged: (_) => _scheduleSearch(),
-                  textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(
-                    hintText: 'Buscar por título ou gênero…',
-                    prefixIcon: Icon(
-                      Icons.search_rounded,
-                      color: scheme.primary,
-                    ),
-                    suffixIcon: value.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded),
-                            onPressed: _clearSearch,
-                            tooltip: 'Limpar busca',
-                          )
-                        : null,
-                  ),
-                );
-              },
-            ),
-          ),
+          const SearchInput(),
           Expanded(
             child: DecoratedBox(
               decoration: BoxDecoration(

@@ -8,6 +8,16 @@ import '../../shared/widgets/loading_indicator.dart';
 
 /// Lista em grelha responsiva com scroll infinito e estados ricos.
 ///
+/// Padrao: [ChangeNotifier] — estado reativo PULL-BASED.
+///
+/// PULL-BASED (ChangeNotifier):
+///   1. initState: `addListener(_onVmChanged)` — se inscreve no ViewModel
+///   2. ViewModel muda estado e chama `notifyListeners()`
+///   3. Callback `_onVmChanged()` executa `setState(() {})`
+///   4. Widget rebuilda e LÊ `vm.filmes`, `vm.isLoading`, etc.
+///
+/// Esta classe usa o padrao PULL-BASED (ChangeNotifier).
+///
 /// Estados geridos:
 /// - Loading inicial → LoadingIndicator
 /// - Erro → UI de erro com "Tentar novamente"
@@ -64,6 +74,21 @@ class _FilmeListState extends State<FilmeList> {
       return const LoadingIndicator(message: 'Carregando filmes…');
     }
 
+    // Loading durante busca: mantém grid visível + indicador discreto no topo.
+    if (vm.isLoading) {
+      return Column(
+        children: [
+          LinearProgressIndicator(
+            minHeight: 2,
+            color: scheme.primary,
+            backgroundColor: scheme.primary.withValues(alpha: 0.2),
+          ),
+          Expanded(child: _buildGrid(vm, scheme)),
+        ],
+      );
+    }
+
+    // Erro ao carregar os filmes
     if (vm.errorMessage != null && vm.filmes.isEmpty) {
       return Center(
         child: Padding(
@@ -105,6 +130,7 @@ class _FilmeListState extends State<FilmeList> {
       );
     }
 
+    // Lista vazia
     if (vm.filmes.isEmpty) {
       return Center(
         child: Padding(
@@ -141,10 +167,14 @@ class _FilmeListState extends State<FilmeList> {
       );
     }
 
+    return _buildGrid(vm, scheme);
+  }
+
+  // Grid de filmes
+  Widget _buildGrid(FilmeListViewModel vm, ColorScheme scheme) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = constraints.maxWidth;
-        // Colunas responsivas: 4 em ecrãs largos, 3 em tablet, 2 em mobile.
         final crossAxisCount = w >= 900 ? 4 : (w >= 600 ? 3 : 2);
 
         return RefreshIndicator(
@@ -161,7 +191,6 @@ class _FilmeListState extends State<FilmeList> {
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
             ),
-            // +1 item para o loading spinner no footer.
             itemCount: vm.filmes.length + (vm.isLoadingMore ? 1 : 0),
             itemBuilder: (context, index) {
               if (index >= vm.filmes.length) {

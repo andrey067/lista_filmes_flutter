@@ -5,10 +5,18 @@ import '../../shared/services/filme_service.dart';
 
 /// ViewModel da lista de filmes (busca + paginação + pull-to-refresh).
 ///
+/// Padrao: [ChangeNotifier] — estado reativo PULL-BASED.
+///
+/// PULL-BASED (ChangeNotifier):
+///   O widget se inscreve com addListener no initState.
+///   Quando o ViewModel muda algo, chama notifyListeners().
+///   O widget rebuilda e LÊ os valores atuais do ViewModel (PULL).
+///
+/// Esta classe usa Provider/ChangeNotifier (nao Stream).
 /// Ciclo de vida:
 /// - Singleton: vive durante toda a sessão da app (recalcula ao buscar).
 /// - `loadInitial`: busca da primeira página com ou sem filtro `q`.
-/// - `loadMore`: acrescenta páginas ao aproximar-se do fim do scroll.
+/// - `loadMore`: acrescent a páginas ao aproximar-se do fim do scroll.
 /// - `refresh`: volta à primeira página mantendo o filtro atual.
 class FilmeListViewModel extends ChangeNotifier {
   FilmeListViewModel(this._service);
@@ -35,10 +43,10 @@ class FilmeListViewModel extends ChangeNotifier {
 
   /// Busca a primeira página (reset do cursor `_skip`).
   Future<void> loadInitial({String? q}) async {
+    final previousFilmes = filmes;
     _query = q;
     _skip = 0;
     hasMore = true;
-    filmes = [];
     errorMessage = null;
     isLoading = true;
     notifyListeners();
@@ -51,10 +59,10 @@ class FilmeListViewModel extends ChangeNotifier {
       );
       filmes = list;
       _skip = filmes.length;
-      // Se voltou menos que pageSize, não há mais páginas.
       hasMore = list.length >= _pageSize;
     } catch (e) {
       errorMessage = e.toString();
+      filmes = previousFilmes;
     } finally {
       isLoading = false;
       notifyListeners();
